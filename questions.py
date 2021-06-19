@@ -1,35 +1,53 @@
 from notecard import Card
-import sqlite3
+from data import Data
+from flask import Flask, request, jsonify
 
-# one = Card("What is the capital of Hungary?","Budapest")
-# two = Card("what is the capital of Latvia?","Riga")
-# three = Card("What is the capital of Romania?", "Bucharest")
-# four = Card("What is the capital of Moldova?", "Chisinau")
+#initiate Flask app
+app = Flask(__name__)
+app.config["DEBUG"] = True
 
-# f = open('text.txt','r')
+d = Data()
 
-# one = Card(f.readline(),f.readline())
-# two = Card(f.readline(),f.readline())
-# three = Card(f.readline(),f.readline())
-# four = Card(f.readline(),f.readline())
+#Home route
+@app.route('/', methods=['GET'])
+def home():
+    return "<h1>Welcome to Notable</h1><p>This site is a prototype for a flash card studying application.</p>"
 
-con = sqlite3.connect('notable.db')
-cur = con.cursor()
+@app.errorhandler(404)
+def page_not_found(e):
+        return "<h1>404</h1><p>The resource could not be found.</p>", 404
 
-questions = []
-for row in cur.execute('SELECT * FROM CARDS'):
-    questions.append(Card(row[0],row[1]))
+#Return card search results
+@app.route('/api/v1/tables', methods=['GET'])
+def search():
+    query_parameters = request.args
+    category = query_parameters.get('category')
+    to_filter = []
+
+    if category:
+        to_filter.append(category)
+        results = d.getAllByCat(d.cur,to_filter)
+    else:
+        results = d.getAll(d.cur,'cards')
+
+    questions = []
+    for row in results:
+        questions.append(row[0])
+        questions.append(row[1])
+    return jsonify(questions)
 
 # questions = []
+# for row in d.getAll(d.cur, 'cards'):
+#     questions.append(Card(row[0], row[1]))
+
+# For reading from Text
+# f = open('text.txt','r')
 # for i in range(1,4):
 #     questions.append(Card(f.readline(),f.readline()))
 
-# questions = [one, two, three, four]
-# questions = [one]
+# for q in questions:
+#     q.reveal()
+#     print('')
 
-for q in questions:
-    q.reveal()
-    print('')
-
-quit()
-
+# quit()
+app.run()
